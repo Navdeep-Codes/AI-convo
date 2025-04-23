@@ -6,13 +6,13 @@ const app = express();
 app.use(express.json());
 
 // Bot tokens and signing secret
-const bot1 = new App({ token: process.env.BOT1_TOKEN, signingSecret: process.env.SIGNING_SECRET });
-const bot2 = new App({ token: process.env.BOT2_TOKEN, signingSecret: process.env.SIGNING_SECRET });
+const bot1 = new App({ token: process.env.BOT1_TOKEN, signingSecret: process.env.BOT1_SIGNING_SECRET });
+const bot2 = new App({ token: process.env.BOT2_TOKEN, signingSecret: process.env.BOT2_SIGNING_SECRET });
 
 let isActive = false;
 let threadTs = null;
 let currentTurn = 'BOT2'; // Alternates between BOT1 and BOT2
-const OWNER_ID = 'YOUR_SLACK_USER_ID'; // <-- Change this
+const OWNER_ID = 'U083T3ZP6AV'; // <-- Change this
 
 async function callAI(message) {
     const res = await axios.post("https://ai.hackclub.com/chat/completions", {
