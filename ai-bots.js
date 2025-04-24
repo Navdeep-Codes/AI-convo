@@ -14,8 +14,8 @@ const slackApp = new App({
 
 let isActive = false;
 let threadTs = null;
-let currentTurn = 'AI1' // start with ai1
-const OWNER_ID = 'U083T3ZP6AV' // admin slack user id
+let currentTurn = 'AI1'; // start with ai1
+const OWNER_ID = 'U083T3ZP6AV'; // admin slack user id
 
 const AI1_USERNAME = 'BeansAI';
 const AI1_ICON_URL = 'https://files.catbox.moe/vim76w.png';
@@ -29,7 +29,7 @@ async function callAI(message) {
     messages: [{ role: "user", content: message }]
   }, { headers: { "Content-Type": "application/json" } });
 
-  return res.data.choices?.[0]?.message?.content || "hmm..."
+  return res.data.choices?.[0]?.message?.content || "hmm...";
 }
 
 // function to continue the conversation
@@ -46,7 +46,7 @@ async function continueConversation(text, channel, thread_ts) {
   // switch turns
   currentTurn = currentTurn === 'AI1' ? 'AI2' : 'AI1';
 
-  // continue the conversation
+  // Continue the conversation
   if (isActive) {
     setTimeout(() => continueConversation(response, channel, thread_ts), 1000);
   }
@@ -79,22 +79,10 @@ slackApp.event('message', async ({ event, client }) => {
   }
 });
 
-// listen for messages to continue the conversation
-slackApp.event('message', async ({ event }) => {
-  if (!isActive || event.thread_ts !== threadTs || event.bot_id !== process.env.BOT_ID) return;
-
-  const text = event.text;
-  if (currentTurn === 'AI1' && event.username !== AI1_USERNAME) {
-    setTimeout(() => continueConversation(text, event.channel, threadTs), 1000);
-  } else if (currentTurn === 'AI2' && event.username !== AI2_USERNAME) {
-    setTimeout(() => continueConversation(text, event.channel, threadTs), 1000);
-  }
-});
-
 // start the server
 const PORT = process.env.PORT || 3000;
 slackApp.start(PORT).then(() => {
-  console.log(`server is running on port ${PORT} Ya Gotta use /slack/events for the event listener!`)
+  console.log(`server is running on port ${PORT} Ya Gotta use /slack/events for the event listener!`);
 }).catch((error) => {
-  console.error('errorrrrrrr starting app:', error)
+  console.error('errorrrrrrr starting app:', error);
 });
