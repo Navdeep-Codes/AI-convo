@@ -5,84 +5,86 @@ const { App } = require('@slack/bolt');
 const app = express();
 app.use(express.json());
 
-// Bot tokens and signing secret
-const bot1 = new App({ token: process.env.BOT1_TOKEN, signingSecret: process.env.BOT1_SIGNING_SECRET });
-const bot2 = new App({ token: process.env.BOT2_TOKEN, signingSecret: process.env.BOT2_SIGNING_SECRET });
+// init the slack app with a single bot token and signing secret
+const slackApp = new App({
+  token: process.env.BOT_TOKEN,
+  signingSecret: process.env.BOT_SIGNING_SECRET
+});
 
 let isActive = false;
 let threadTs = null;
-let currentTurn = 'BOT2'; // Alternates between BOT1 and BOT2
-const OWNER_ID = 'U083T3ZP6AV'; // <-- Change this
+let currentTurn = 'AI1' // start with ai1
+const OWNER_ID = 'U083T3ZP6AV' // admin slack user id
 
+const AI1_USERNAME = 'BeansAI';
+const AI1_ICON_URL = 'https://files.catbox.moe/vim76w.png';
+
+const AI2_USERNAME = 'BreadAI';
+const AI2_ICON_URL = 'https://files.catbox.moe/8l6qb6.png;
+
+// call the ai endpoint
 async function callAI(message) {
-    const res = await axios.post("https://ai.hackclub.com/chat/completions", {
-        messages: [{ role: "user", content: message }]
-    }, { headers: { "Content-Type": "application/json" } });
+  const res = await axios.post("https://ai.hackclub.com/chat/completions", {
+    messages: [{ role: "user", content: message }]
+  }, { headers: { "Content-Type": "application/json" } });
 
-    return res.data.choices?.[0]?.message?.content || "Hmm...";
+  return res.data.choices?.[0]?.message?.content || "hmm..."
 }
 
-async function continueConversation(text, bot, channel, thread_ts) {
-    const response = await callAI(text);
-    await bot.client.chat.postMessage({
-        channel,
-        thread_ts,
-        text: response
+// function to continue the conversation
+async function continueConversation(text, channel, thread_ts) {
+  const response = await callAI(text);
+  await slackApp.client.chat.postMessage({
+    channel,
+    thread_ts,
+    text: response,
+    username: currentTurn === 'AI1' ? AI1_USERNAME : AI2_USERNAME,
+    icon_url: currentTurn === 'AI1' ? AI1_ICON_URL : AI2_ICON_URL
+  });
+
+  // switch turns
+  currentTurn = currentTurn === 'AI1' ? 'AI2' : 'AI1';
+}
+
+// listen for messages to start the convo
+slackApp.event('message', async ({ event, client }) => {
+  if (event.user !== OWNER_ID || event.bot_id) return;
+
+  if (event.text === 'i love ai convos') {
+    isActive = true;
+    threadTs = null;
+
+    const res = await client.chat.postMessage({
+      channel: event.channel,
+      text: "really, i like it too.",
+      username: AI1_USERNAME,
+      icon_url: AI1_ICON_URL
     });
 
-    // Switch turn
-    currentTurn = currentTurn === 'BOT1' ? 'BOT2' : 'BOT1';
-}
+    threadTs = res.ts;
 
-bot1.event('message', async ({ event, client }) => {
-    if (event.user !== OWNER_ID || event.bot_id) return;
+    // ai1 starts the convo in the thread
+    await continueConversation("hello", event.channel, threadTs);
+  }
 
-    if (event.text === 'I love AI convos') {
-        isActive = true;
-        threadTs = null;
-
-        const res = await client.chat.postMessage({
-            channel: event.channel,
-            text: "Really, I like it too."
-        });
-
-        threadTs = res.ts;
-
-        // BOT1 starts the convo in thread
-        await client.chat.postMessage({
-            channel: event.channel,
-            thread_ts: threadTs,
-            text: "Hello"
-        });
-
-        currentTurn = 'BOT2'; // BOT2 will reply next
-    }
-
-    if (event.text === 'STOP IT') {
-        isActive = false;
-        threadTs = null;
-    }
+  if (event.text === 'STOP') {
+    isActive = false;
+    threadTs = null;
+  }
 });
 
-bot1.event('message', async ({ event }) => {
-    if (!isActive || event.thread_ts !== threadTs || event.bot_id !== process.env.BOT1_ID) return;
-    if (currentTurn !== 'BOT2') return;
+// listen for messages to continue the convo
+slackApp.event('message', async ({ event }) => {
+  if (!isActive || event.thread_ts !== threadTs || event.bot_id !== process.env.BOT_ID) return;
 
-    const text = event.text;
-    setTimeout(() => continueConversation(text, bot2, event.channel, threadTs), 1000);
+  const text = event.text;
+  setTimeout(() => continueConversation(text, event.channel, threadTs), 1000);
 });
 
-bot2.event('message', async ({ event }) => {
-    if (!isActive || event.thread_ts !== threadTs || event.bot_id !== process.env.BOT2_ID) return;
-    if (currentTurn !== 'BOT1') return;
-
-    const text = event.text;
-    setTimeout(() => continueConversation(text, bot1, event.channel, threadTs), 1000);
+// start the server
+const PORT = process.env.PORT || 3000;
+slackApp.start(PORT).then(() => {
+  console.log(`server is running on port ${PORT} Ya Gotta use /slack/events for the event listener!`)
+}).catch((error) => {
+  console.error('errorrrrrrr starting app:', error)
 });
-
-// Start both bots
-(async () => {
-    await bot1.start(process.env.PORT1 || 3001);
-    await bot2.start(process.env.PORT2 || 3002);
-    console.log('Bots are running');
-})();
