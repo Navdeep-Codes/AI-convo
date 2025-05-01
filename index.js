@@ -13,8 +13,8 @@ const app = new App({
 
 async function sendScheduledMessage(extra = false) {
   const text = extra
-    ? 'Extra message triggered by the owner.'
-    : 'Hello! This is your regular 6-hour check-in!';
+    ? 'Go dm me to join <#C08JRG8VCBY>'
+    : 'dm me to join <#C08JRG8VCBY> !';
   try {
     await app.client.chat.postMessage({
       channel: process.env.STARTUP_CHANNEL,
