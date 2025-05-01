@@ -92,7 +92,7 @@ slackApp.event('message', async ({ event }) => {
 });
 
 // start the server
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 slackApp.start(PORT).then(() => {
   console.log(`server is running on port ${PORT} Ya Gotta use /slack/events for the event listener!`)
 }).catch((error) => {
