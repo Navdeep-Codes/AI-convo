@@ -98,13 +98,13 @@ app.event('reaction_added', async ({ event, client, logger }) => {
 
     await client.chat.postMessage({
       channel: process.env.TARGET_CHANNEL,
-      text: `👋 Welcome <@${user}>! You reacted and got added! 🎉
+      text: `👋 Welcome! You reacted and got added! 🎉`
     });
 
-    console.log(`✅ Invited and welcomed <@${user}>`);
+    console.log("✅ Invited and welcomed user");
   } catch (error) {
     if (error.data?.error === 'already_in_channel') {
-      console.log(`ℹ️ <@${user}> is already in the channel.`);
+      console.log("ℹ️ User is already in the channel.");
     } else {
       logger.error('❌ Reaction error:', error);
     }
