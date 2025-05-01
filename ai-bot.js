@@ -20,7 +20,7 @@ const AI1_USERNAME = 'BeansAI';
 const AI1_ICON_URL = 'https://files.catbox.moe/vim76w.png';
 
 const AI2_USERNAME = 'BreadAI';
-const AI2_ICON_URL = 'https://files.catbox.moe/8l6qb6.png;
+const AI2_ICON_URL = 'https://files.catbox.moe/8l6qb6.png';
 
 // call the ai endpoint
 async function callAI(message) {
