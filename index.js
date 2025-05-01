@@ -15,8 +15,8 @@ let lastSentMessageTs = null; // Track last /sendnow message timestamp
 
 async function sendScheduledMessage(extra = false) {
   const text = extra
-    ? 'Go dm me to join <#C08JRG8VCBY>'
-    : 'dm me to join <#C08JRG8VCBY> !';
+    ? 'react this message to join <#C08JRG8VCBY>!'
+    : 'react this message to join <#C08JRG8VCBY>!';
   try {
     const result = await app.client.chat.postMessage({
       channel: process.env.STARTUP_CHANNEL,
@@ -40,7 +40,7 @@ async function sendScheduledMessage(extra = false) {
   console.log(`Slack bot running on port ${port}`);
 
   // Send every 6 hours
-  cron.schedule('0 */6 * * *', () => {
+  cron.schedule('0 */12 * * *', () => {
     sendScheduledMessage();
   });
 })();
