@@ -11,15 +11,22 @@ const app = new App({
   receiver,
 });
 
+let lastSentMessageTs = null; // Track last /sendnow message timestamp
+
 async function sendScheduledMessage(extra = false) {
   const text = extra
     ? 'Go dm me to join <#C08JRG8VCBY>'
     : 'dm me to join <#C08JRG8VCBY> !';
   try {
-    await app.client.chat.postMessage({
+    const result = await app.client.chat.postMessage({
       channel: process.env.STARTUP_CHANNEL,
       text
     });
+
+    if (extra) {
+      lastSentMessageTs = result.ts; // Save message timestamp if /sendnow triggered
+    }
+
     console.log('Sent message:', text);
   } catch (err) {
     console.error('Error sending message:', err);
@@ -32,6 +39,7 @@ async function sendScheduledMessage(extra = false) {
   await app.start(port);
   console.log(`Slack bot running on port ${port}`);
 
+  // Send every 6 hours
   cron.schedule('0 */6 * * *', () => {
     sendScheduledMessage();
   });
@@ -57,6 +65,7 @@ app.event('message', async ({ event, client }) => {
   }
 });
 
+// ✅ Slash command: /sendnow
 app.command('/sendnow', async ({ ack, body, respond }) => {
   await ack();
 
@@ -73,4 +82,31 @@ app.command('/sendnow', async ({ ack, body, respond }) => {
     text: 'Extra message has been sent.',
     response_type: 'ephemeral'
   });
+});
+
+// ✅ Reaction listener
+app.event('reaction_added', async ({ event, client, logger }) => {
+  const { user, item } = event;
+
+  if (item.ts !== lastSentMessageTs) return; // Only react to /sendnow message
+
+  try {
+    await client.conversations.invite({
+      channel: process.env.TARGET_CHANNEL,
+      users: user
+    });
+
+    await client.chat.postMessage({
+      channel: process.env.TARGET_CHANNEL,
+      text: `👋 Welcome <@${user}>! You reacted and got added! 🎉
+    });
+
+    console.log(`✅ Invited and welcomed <@${user}>`);
+  } catch (error) {
+    if (error.data?.error === 'already_in_channel') {
+      console.log(`ℹ️ <@${user}> is already in the channel.`);
+    } else {
+      logger.error('❌ Reaction error:', error);
+    }
+  }
 });
