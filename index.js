@@ -32,8 +32,6 @@ async function sendScheduledMessage(extra = false) {
   await app.start(port);
   console.log(`Slack bot running on port ${port}`);
 
-  await sendScheduledMessage(true);
-
   cron.schedule('0 */6 * * *', () => {
     sendScheduledMessage();
   });
