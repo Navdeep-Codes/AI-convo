@@ -7,8 +7,8 @@ app.use(express.json());
 
 // init the slack app with a single bot token and signing secret
 const slackApp = new App({
-  token: process.env.BOT_TOKEN,
-  signingSecret: process.env.BOT_SIGNING_SECRET
+  token: process.env.SLACK_BOT_TOKEN,
+  signingSecret: process.env.SLACK_SIGNING_SECRET
 });
 
 let isActive = false;
