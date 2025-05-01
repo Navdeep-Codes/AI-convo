@@ -1,21 +1,18 @@
 require('dotenv').config();
-const express = require('express');
-const axios = require('axios');
 const { App } = require('@slack/bolt');
+const axios = require('axios');
 
-const app = express();
-app.use(express.json());
-
-// init the slack app with a single bot token and signing secret
 const slackApp = new App({
   token: process.env.SLACK_BOT_TOKEN,
-  signingSecret: process.env.SLACK_SIGNING_SECRET
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  socketMode: false,
+  appToken: process.env.SLACK_APP_TOKEN // Needed only if using socketMode
 });
 
 let isActive = false;
 let threadTs = null;
-let currentTurn = 'AI1' // start with ai1
-const OWNER_ID = 'U083T3ZP6AV' // admin slack user id
+let currentTurn = 'AI1';
+const OWNER_ID = 'U083T3ZP6AV';
 
 const AI1_USERNAME = 'BeansAI';
 const AI1_ICON_URL = 'https://files.catbox.moe/vim76w.png';
@@ -23,18 +20,17 @@ const AI1_ICON_URL = 'https://files.catbox.moe/vim76w.png';
 const AI2_USERNAME = 'BreadAI';
 const AI2_ICON_URL = 'https://files.catbox.moe/8l6qb6.png';
 
-// call the ai endpoint
 async function callAI(message) {
   const res = await axios.post("https://ai.hackclub.com/chat/completions/", {
     messages: [{ role: "user", content: message }]
   }, { headers: { "Content-Type": "application/json" } });
 
-  return res.data.choices?.[0]?.message?.content || "hmm..."
+  return res.data.choices?.[0]?.message?.content || "hmm...";
 }
 
-// function to continue the conversation
 async function continueConversation(text, channel, thread_ts) {
   const response = await callAI(text);
+
   await slackApp.client.chat.postMessage({
     channel,
     thread_ts,
@@ -43,58 +39,43 @@ async function continueConversation(text, channel, thread_ts) {
     icon_url: currentTurn === 'AI1' ? AI1_ICON_URL : AI2_ICON_URL
   });
 
-  // switch turns
   currentTurn = currentTurn === 'AI1' ? 'AI2' : 'AI1';
 
-  // continue the conversation
   if (isActive) {
     setTimeout(() => continueConversation(response, channel, thread_ts), 1000);
   }
 }
 
-// listen for messages to start the conversation
+// Single message event handler
 slackApp.event('message', async ({ event, client }) => {
-  if (event.user !== OWNER_ID || event.bot_id) return;
+  if (event.user === OWNER_ID && !event.bot_id) {
+    // Start conversation trigger
+    if (event.text === 'i like ai') {
+      isActive = true;
+      currentTurn = 'AI1';
 
-  if (event.text === 'i like ai') {
-    isActive = true;
-    threadTs = null;
+      const res = await client.chat.postMessage({
+        channel: event.channel,
+        text: "really, i like it too.",
+        username: AI1_USERNAME,
+        icon_url: AI1_ICON_URL
+      });
 
-    const res = await client.chat.postMessage({
-      channel: event.channel,
-      text: "really, i like it too.",
-      username: AI1_USERNAME,
-      icon_url: AI1_ICON_URL
-    });
+      threadTs = res.ts;
+      await continueConversation("hello", event.channel, threadTs);
+    }
 
-    threadTs = res.ts;
-
-    // AI1 starts the conversation in the thread
-    await continueConversation("hello", event.channel, threadTs);
-  }
-
-  if (event.text === 'STOP') {
-    isActive = false;
-    threadTs = null;
-  }
-});
-
-// listen for messages to continue the conversation
-slackApp.event('message', async ({ event }) => {
-  if (!isActive || event.thread_ts !== threadTs || event.bot_id !== process.env.BOT_ID) return;
-
-  const text = event.text;
-  if (currentTurn === 'AI1' && event.username !== AI1_USERNAME) {
-    setTimeout(() => continueConversation(text, event.channel, threadTs), 1000);
-  } else if (currentTurn === 'AI2' && event.username !== AI2_USERNAME) {
-    setTimeout(() => continueConversation(text, event.channel, threadTs), 1000);
+    // Stop conversation trigger
+    if (event.text === 'STOP') {
+      isActive = false;
+      threadTs = null;
+    }
   }
 });
 
-// start the server
-const PORT = 3000;
-slackApp.start(PORT).then(() => {
-  console.log(`server is running on port ${PORT} Ya Gotta use /slack/events for the event listener!`)
-}).catch((error) => {
-  console.error('errorrrrrrr starting app:', error)
-});
+// Start the app
+(async () => {
+  const PORT = 3000;
+  await slackApp.start(PORT);
+  console.log(`Server is running on port ${PORT}`);
+})();
