@@ -1,7 +1,7 @@
 {
   "name": "slack-bot",
   "version": "1.0.0",
-  "main": "run.js",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
