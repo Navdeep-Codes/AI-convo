@@ -45,7 +45,10 @@ app.command('/campaign', async ({ ack, body, respond }) => {
   }
 });
 
-app.event('reaction_added', async ({ event, client, logger }) => {
+app.event('reaction_added', async ({ event, client, logger, ack }) => {
+  // Acknowledge the event immediately
+  await ack();
+
   const { user, item } = event;
 
   if (item.ts !== lastSentMessageTs) return;
