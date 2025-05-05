@@ -34,7 +34,7 @@ async function sendScheduledMessage(extra = false) {
 }
 
 (async () => {
-  const port = process.env.PORT || 3000;
+  const port = 3000;
 
   await app.start(port);
   console.log(`Slack bot running on port ${port}`);
