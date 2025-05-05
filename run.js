@@ -19,7 +19,7 @@ script1.on('close', (code) => {
 });
 
 // Start the second script (script2.js)
-const script2 = spawn('node', ['ai-bot.js']);
+const script2 = spawn('node', ['ai.js']);
 
 // Log any output from script2
 script2.stdout.on('data', (data) => {
